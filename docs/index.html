@@ -4,11 +4,259 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <style>
+      /* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+      html,
+      body,
+      div,
+      span,
+      applet,
+      object,
+      iframe,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      blockquote,
+      pre,
+      a,
+      abbr,
+      acronym,
+      address,
+      big,
+      cite,
+      code,
+      del,
+      dfn,
+      em,
+      img,
+      ins,
+      kbd,
+      q,
+      s,
+      samp,
+      small,
+      strike,
+      strong,
+      sub,
+      sup,
+      tt,
+      var,
+      b,
+      u,
+      i,
+      center,
+      dl,
+      dt,
+      dd,
+      ol,
+      ul,
+      li,
+      fieldset,
+      form,
+      label,
+      legend,
+      table,
+      caption,
+      tbody,
+      tfoot,
+      thead,
+      tr,
+      th,
+      td,
+      article,
+      aside,
+      canvas,
+      details,
+      embed,
+      figure,
+      figcaption,
+      footer,
+      header,
+      hgroup,
+      menu,
+      nav,
+      output,
+      ruby,
+      section,
+      summary,
+      time,
+      mark,
+      audio,
+      video {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-size: 100%;
+        font: inherit;
+        vertical-align: baseline;
+      }
+      /* HTML5 display-role reset for older browsers */
+      article,
+      aside,
+      details,
+      figcaption,
+      figure,
+      footer,
+      header,
+      hgroup,
+      menu,
+      nav,
+      section {
+        display: block;
+      }
+      body {
+        line-height: 1;
+      }
+      ol,
+      ul {
+        list-style: none;
+      }
+      blockquote,
+      q {
+        quotes: none;
+      }
+      blockquote:before,
+      blockquote:after,
+      q:before,
+      q:after {
+        content: "";
+        content: none;
+      }
+      table {
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
+
+      * {
+        box-sizing: border-box;
+        font-family: sans-serif;
+      }
+
+      body {
+        padding: 2rem;
+        display: grid;
+        align-items: center;
+        justify-items: center;
+        min-height: 100%;
+        gap: 3rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      main {
+        display: grid;
+        align-content: center;
+        justify-content: center;
+        justify-items: center;
+        align-items: center;
+        gap: 1rem;
+      }
+    </style>
   </head>
   <body>
-    <h1>
-      When will the <abbr title="New York Times">NYT</abbr> mini crossword
-      reset?
-    </h1>
+    <main>
+      <h1>
+        When will the <abbr title="New York Times">NYT</abbr> mini crossword
+        reset?
+      </h1>
+      <h3 id="timerHeading">New Game starts in...</h3>
+      <p><time id="timer" aria-labelledby="timerHeading"></time></p>
+    </main>
+    <footer>
+      <nav title="Related Links">
+        <a href="https://www.nytimes.com/crosswords/game/mini"
+          ><abbr title="New York Times">NYT</abbr> Mini Crossword</a
+        >
+        <a
+          href="https://help.nytimes.com/hc/en-us/articles/360025912452-The-Mini-Crossword"
+          >Support Page for <abbr title="New York Times">NYT</abbr> Mini
+          Crossword</a
+        >
+      </nav>
+    </footer>
+    <script>
+      // ChatGPT wrote this for me and I haven't checked it properly because I need to get back to work
+      function getDurationUntilNextCrossword(format = "ISO") {
+        // Get current time in UTC
+        const now = new Date();
+
+        // Get the current time in EST (New York)
+        const currentESTOffset = -5 * 60; // New York is UTC-5 (EST), adjust for DST if needed
+        const nowEST = new Date(
+          now.getTime() + (now.getTimezoneOffset() + currentESTOffset) * 60000
+        );
+
+        let nextUpdate = new Date(nowEST); // Initialize the next update date
+
+        // Determine the next crossword release time
+        const dayOfWeek = nowEST.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+        if (dayOfWeek === 0) {
+          // Sunday, the next puzzle is available on Monday at 10 p.m. EST
+          nextUpdate.setDate(nowEST.getDate() + 1); // Move to Monday
+          nextUpdate.setHours(22, 0, 0, 0); // Set to 10 p.m. EST
+        } else if (dayOfWeek === 6) {
+          // Saturday, the next puzzle is available at 6 p.m. EST (Sunday puzzle)
+          nextUpdate.setHours(18, 0, 0, 0); // Set to 6 p.m. EST
+        } else {
+          // Weekdays (Monday to Friday), the next puzzle is available at 10 p.m. EST the same day
+          nextUpdate.setHours(22, 0, 0, 0); // Set to 10 p.m. EST
+        }
+
+        // If the current time is already past the puzzle release time, move to the next day
+        if (nowEST > nextUpdate) {
+          nextUpdate.setDate(nextUpdate.getDate() + 1); // Move to the next day
+          if (nextUpdate.getDay() === 6) {
+            // If it's Saturday again, set the time to 6 p.m. EST for the Sunday puzzle
+            nextUpdate.setHours(18, 0, 0, 0);
+          } else {
+            // Otherwise, set it to 10 p.m. EST
+            nextUpdate.setHours(22, 0, 0, 0);
+          }
+        }
+
+        // Calculate the duration in milliseconds
+        const durationMs = nextUpdate - nowEST;
+
+        // Convert duration to components
+        const durationSeconds = Math.floor(durationMs / 1000);
+        const hours = Math.floor(durationSeconds / 3600);
+        const minutes = Math.floor((durationSeconds % 3600) / 60);
+        const seconds = durationSeconds % 60;
+
+        if (format === "ISO") {
+          // Output in ISO 8601 duration format
+          return `PT${hours}H${minutes}M${seconds}S`;
+        } else {
+          // Output in human-readable format
+          const parts = [];
+          if (hours > 0) parts.push(`${hours} hour${hours > 1 ? "s" : ""}`);
+          if (minutes > 0)
+            parts.push(`${minutes} minute${minutes > 1 ? "s" : ""}`);
+          if (seconds > 0)
+            parts.push(`${seconds} second${seconds > 1 ? "s" : ""}`);
+          return parts.join(", ");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        var timerEl = document.getElementById("timer");
+
+        setInterval(() => {
+          timerEl.innerText = getDurationUntilNextCrossword("human");
+          timerEl.setAttribute("datetime", getDurationUntilNextCrossword());
+        }, 500);
+      });
+    </script>
   </body>
 </html>
